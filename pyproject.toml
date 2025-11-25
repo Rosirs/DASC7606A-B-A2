@@ -19,3 +19,6 @@ dependencies = [
     "transformers>=4.57.1",
     "trl>=0.24.0",
 ]
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "scripts"]
