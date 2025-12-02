@@ -153,6 +153,8 @@ def preprocess_data(raw_datasets: DatasetDict, tokenizer) -> DatasetDict:
     Returns:
         Tokenized datasets.
     """
+    column_names = raw_datasets["train"].column_names
+    
     tokenized_datasets: DatasetDict = raw_datasets.map(
         function=lambda examples: preprocess_function(
             examples=examples,
@@ -162,5 +164,6 @@ def preprocess_data(raw_datasets: DatasetDict, tokenizer) -> DatasetDict:
             max_target_length=MAX_TARGET_LENGTH,
         ),
         batched=True,
+        remove_columns=column_names
     )
     return tokenized_datasets

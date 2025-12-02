@@ -3,6 +3,9 @@ from model import initialize_model, initialize_tokenizer
 from trainer import build_trainer
 from utils import not_change_test_dataset, set_random_seeds
 
+import os
+import sys
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 def main():
     """
