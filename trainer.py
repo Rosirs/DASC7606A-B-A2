@@ -55,7 +55,7 @@ def create_training_arguments() -> TrainingArguments:
         
         # Performance optimizations
         fp16=True,                       # Mixed precision training
-        dataloader_num_workers=2,        # Reduced for stability (2 is often enough)
+        dataloader_num_workers=0,        # Reduced for stability (2 is often enough)
         dataloader_pin_memory=False,     # Set to False to avoid warning
         group_by_length=True,            # Group similar lengths for efficiency
         
@@ -67,19 +67,6 @@ def create_training_arguments() -> TrainingArguments:
         remove_unused_columns=True,
         push_to_hub=False,
         max_steps=-1, 
-
-
-
-        # # === 🛑 DEBUG 模式修改 (测试完请改回) ===
-        # num_train_epochs=1,                 # 只跑 1 个 epoch
-        # max_steps=10,                       # 强制只跑 10 步就结束
-        # logging_steps=1,                    # 每步都打印日志
-        # save_steps=5,                       # 第 5 步尝试保存
-        # eval_steps=5,                       # 第 5 步尝试评估
-        # per_device_train_batch_size=4,      # DEBUG 时小batch，避免OOM
-        # per_device_eval_batch_size=8,       # 评估可以稍大
-        # gradient_accumulation_steps=4,      # DEBUG时减少累积步数
-        # # ========================================
     )
 
     return training_args

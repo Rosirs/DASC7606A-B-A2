@@ -96,12 +96,6 @@ def build_dataset() -> DatasetDict | Dataset | IterableDatasetDict | IterableDat
     # NOTE: You should not change the test dataset
     test_dataset = dataset["validation"]
 
-    # # === 🛑 DEBUG 模式修改 (测试完请务必删除或注释掉) ===
-    # print("!!! DEBUG MODE ENABLED: Using only 50 samples !!!")
-    # train_dataset = train_dataset.select(range(50))
-    # validation_dataset = validation_dataset.select(range(20))
-    # # ======================================================
-
     return DatasetDict({
         "train": train_dataset,
         "validation": validation_dataset,

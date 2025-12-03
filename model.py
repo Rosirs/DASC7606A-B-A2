@@ -1,6 +1,8 @@
 from transformers import AutoTokenizer, PreTrainedTokenizer, PreTrainedTokenizerFast, PreTrainedModel, AutoModelForSeq2SeqLM
 from peft import LoraConfig, get_peft_model, TaskType
 
+import torch
+
 from constants import MODEL_CHECKPOINT
 
 
@@ -33,17 +35,9 @@ def initialize_model() -> PreTrainedModel:
     model: PreTrainedModel = AutoModelForSeq2SeqLM.from_pretrained(
         pretrained_model_name_or_path=MODEL_CHECKPOINT
     )
-       
-    # Enable gradient checkpointing to reduce memory usage
-    # This allows larger batch sizes at the cost of ~20% slower training
-    if hasattr(model, 'gradient_checkpointing_enable'):
-        model.gradient_checkpointing_enable()
     
     print(f"✓ Loaded base model: {MODEL_CHECKPOINT}")
-    
-    # Configure LoRA - Optimized for translation tasks
-    # Choose one of the following configurations:
-    
+
     # === Configuration 1: Balanced (Recommended) ===
     # Good trade-off between performance and efficiency
     lora_config = LoraConfig(
@@ -96,7 +90,14 @@ def initialize_model() -> PreTrainedModel:
     # Apply LoRA to the model
     model = get_peft_model(model, lora_config)
     
+    # Enable input gradients for gradient checkpointing compatibility
+    model.enable_input_require_grads()
+    
     # Print trainable parameters
     model.print_trainable_parameters()
-    
+
+    # 在模型初始化后添加
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"[INFO] 当前设备: {device} (GPU可用: {torch.cuda.is_available()})")
+
     return model
