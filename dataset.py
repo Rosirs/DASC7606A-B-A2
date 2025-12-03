@@ -75,7 +75,7 @@ def build_dataset() -> DatasetDict | Dataset | IterableDatasetDict | IterableDat
     opus100_dataset = load_dataset("opus100", "en-zh")
     
     # Combine WMT19 and OPUS100 training data for richer training
-    wmt19_train = dataset["train"]
+    wmt19_train = dataset["train"].select(range(500000))  # Use first 500k samples from WMT19 for training
     opus100_train = opus100_dataset["train"]
     
     # Filter low-quality data from both datasets
@@ -95,6 +95,13 @@ def build_dataset() -> DatasetDict | Dataset | IterableDatasetDict | IterableDat
 
     # NOTE: You should not change the test dataset
     test_dataset = dataset["validation"]
+
+    # # === 🛑 DEBUG 模式修改 (测试完请务必删除或注释掉) ===
+    # print("!!! DEBUG MODE ENABLED: Using only 50 samples !!!")
+    # train_dataset = train_dataset.select(range(50))
+    # validation_dataset = validation_dataset.select(range(20))
+    # # ======================================================
+
     return DatasetDict({
         "train": train_dataset,
         "validation": validation_dataset,
@@ -118,25 +125,38 @@ def create_data_collator(tokenizer, model):
 
 def preprocess_function(examples, prefix, tokenizer, max_input_length, max_target_length):
     """
-    Preprocess the data.
+    Preprocess the data for sequence-to-sequence models.
 
     Args:
         examples: Examples.
-        prefix: Prefix.
+        prefix: Prefix to add before inputs (optional).
         tokenizer: Tokenizer object.
         max_input_length: Maximum input length.
         max_target_length: Maximum target length.
 
     Returns:
-        Model inputs.
+        Model inputs dict.
     """
     # Extract Chinese (source) and English (target) texts
-    # NLLB tokenizer will automatically add language codes based on src_lang/tgt_lang
-    inputs = [ex["zh"] for ex in examples["translation"]]
+    inputs = [prefix + ex["zh"] for ex in examples["translation"]]
     targets = [ex["en"] for ex in examples["translation"]]
 
-    model_inputs = tokenizer(inputs, max_length=max_input_length, truncation=True, padding=False)
-    labels = tokenizer(text_target=targets, max_length=max_target_length, truncation=True, padding=False)
+    # Tokenize inputs (source)
+    model_inputs = tokenizer(
+        inputs, 
+        max_length=max_input_length, 
+        truncation=True, 
+        padding=False
+    )
+    
+    # Tokenize targets (labels)
+    with tokenizer.as_target_tokenizer():
+        labels = tokenizer(
+            targets,
+            max_length=max_target_length, 
+            truncation=True, 
+            padding=False
+        )
 
     model_inputs["labels"] = labels["input_ids"]
     return model_inputs

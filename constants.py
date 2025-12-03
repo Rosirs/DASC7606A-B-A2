@@ -1,4 +1,4 @@
 OUTPUT_DIR = "./results"
 MAX_INPUT_LENGTH = 256
 MAX_TARGET_LENGTH = 256
-MODEL_CHECKPOINT = "facebook/nllb-200-distilled-600M"
+MODEL_CHECKPOINT = "Helsinki-NLP/opus-mt-zh-en"

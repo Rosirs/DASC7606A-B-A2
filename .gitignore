@@ -1,1 +1,12 @@
-*.egg-info/ 
+*.csv
+*.zip
+*.tar.gz
+*.pth
+*.h5
+*.ckpt
+__pycache__/
+*.egg-info/
+results/
+checkpoints/
+*.safetensors
+*.pt

@@ -20,12 +20,12 @@ def create_training_arguments() -> TrainingArguments:
         
         # Training epochs and batch size
         num_train_epochs=3,
-        per_device_train_batch_size=16,  # Reduced for NLLB-600M with gradient checkpointing
-        per_device_eval_batch_size=32,   # Can be larger during eval (no gradients)
-        gradient_accumulation_steps=8,   # Effective batch size = 16 * 8 = 128
+        per_device_train_batch_size=32,  # Increased for LoRA (less memory usage)
+        per_device_eval_batch_size=64,   # Can be larger during eval (no gradients)
+        gradient_accumulation_steps=4,   # Effective batch size = 32 * 4 = 128
         
         # Learning rate and optimization
-        learning_rate=3e-5,              # Optimal for NLLB fine-tuning
+        learning_rate=1e-4,              # Higher LR for LoRA (3e-4 to 1e-4)
         weight_decay=0.01,               # L2 regularization
         warmup_ratio=0.1,                # 10% warmup steps
         warmup_steps=0,
@@ -45,7 +45,7 @@ def create_training_arguments() -> TrainingArguments:
         metric_for_best_model="bleu",
         greater_is_better=True,
         
-        # Generation settings for NLLB
+        # Generation settings for Seq2Seq models
         predict_with_generate=True,
         generation_max_length=256,       # Match MAX_TARGET_LENGTH
         generation_num_beams=5,          # Beam search for better quality
@@ -55,8 +55,8 @@ def create_training_arguments() -> TrainingArguments:
         
         # Performance optimizations
         fp16=True,                       # Mixed precision training
-        dataloader_num_workers=4,        # Parallel data loading
-        dataloader_pin_memory=True,      # Speed up data transfer to GPU
+        dataloader_num_workers=2,        # Reduced for stability (2 is often enough)
+        dataloader_pin_memory=False,     # Set to False to avoid warning
         group_by_length=True,            # Group similar lengths for efficiency
         
         # Memory optimizations (enabled gradient checkpointing in model)
@@ -66,14 +66,27 @@ def create_training_arguments() -> TrainingArguments:
         report_to="none",                # Disable wandb/tensorboard if not needed
         remove_unused_columns=True,
         push_to_hub=False,
+        max_steps=-1, 
+
+
+
+        # # === 🛑 DEBUG 模式修改 (测试完请改回) ===
+        # num_train_epochs=1,                 # 只跑 1 个 epoch
+        # max_steps=10,                       # 强制只跑 10 步就结束
+        # logging_steps=1,                    # 每步都打印日志
+        # save_steps=5,                       # 第 5 步尝试保存
+        # eval_steps=5,                       # 第 5 步尝试评估
+        # per_device_train_batch_size=4,      # DEBUG 时小batch，避免OOM
+        # per_device_eval_batch_size=8,       # 评估可以稍大
+        # gradient_accumulation_steps=4,      # DEBUG时减少累积步数
+        # # ========================================
     )
 
     return training_args
 
-
 def create_data_collator(tokenizer, model):
     """
-    Create data collator for sequence-to-sequence tasks optimized for NLLB.
+    Create data collator for sequence-to-sequence tasks.
 
     Args:
         tokenizer: Tokenizer object.
@@ -81,14 +94,12 @@ def create_data_collator(tokenizer, model):
 
     Returns:
         DataCollatorForSeq2Seq instance.
-
-    NOTE: You are free to change this. But make sure the data collator is the same as the model.
     """
     return DataCollatorForSeq2Seq(
-        tokenizer=tokenizer, 
+        tokenizer=tokenizer,
         model=model,
-        padding=True,              # Dynamic padding for efficiency
-        pad_to_multiple_of=8,      # Optimize for tensor cores (fp16)
+        padding=True,
+        label_pad_token_id=-100,
     )
 
 
