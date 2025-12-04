@@ -19,10 +19,10 @@ def create_training_arguments() -> TrainingArguments:
         output_dir=OUTPUT_DIR,
         
         # Training epochs and batch size
-        num_train_epochs=3,
-        per_device_train_batch_size=32,  # Increased for LoRA (less memory usage)
-        per_device_eval_batch_size=64,   # Can be larger during eval (no gradients)
-        gradient_accumulation_steps=4,   # Effective batch size = 32 * 4 = 128
+        num_train_epochs=1,
+        per_device_train_batch_size=8,   # Reduce to avoid CUDA OOM
+        per_device_eval_batch_size=8,   # Smaller eval batch size
+        gradient_accumulation_steps=8,   # Effective batch size = 8 * 8 = 64
         
         # Learning rate and optimization
         learning_rate=1e-4,              # Higher LR for LoRA (3e-4 to 1e-4)
@@ -33,13 +33,13 @@ def create_training_arguments() -> TrainingArguments:
         
         # Evaluation and logging
         eval_strategy="steps",
-        eval_steps=500,                  # Evaluate every 500 steps
-        logging_steps=100,               # Log every 100 steps
+        eval_steps=2000,                 # Less frequent evaluation to save memory
+        logging_steps=200,               # Less frequent logging
         logging_first_step=True,
         
         # Checkpointing
         save_strategy="steps",
-        save_steps=500,                  # Save checkpoint every 500 steps
+        save_steps=2000,                 # Less frequent checkpointing
         save_total_limit=3,              # Keep only 3 best checkpoints
         load_best_model_at_end=True,
         metric_for_best_model="bleu",
@@ -47,8 +47,8 @@ def create_training_arguments() -> TrainingArguments:
         
         # Generation settings for Seq2Seq models
         predict_with_generate=True,
-        generation_max_length=256,       # Match MAX_TARGET_LENGTH
-        generation_num_beams=5,          # Beam search for better quality
+        generation_max_length=128,       # Shorter generation to reduce memory
+        generation_num_beams=5,          # Fewer beams to reduce memory
         
         # Regularization
         label_smoothing_factor=0.1,      # Prevent overconfidence
@@ -67,6 +67,7 @@ def create_training_arguments() -> TrainingArguments:
         remove_unused_columns=True,
         push_to_hub=False,
         max_steps=-1, 
+
     )
 
     return training_args

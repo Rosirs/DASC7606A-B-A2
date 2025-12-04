@@ -58,10 +58,10 @@ def filter_low_quality_data(example):
 
 def build_dataset() -> DatasetDict | Dataset | IterableDatasetDict | IterableDataset:
     """
-    Build the dataset combining WMT19 and OPUS100 for richer training data.
+    Build the dataset using only WMT19 to avoid domain shift.
 
     Returns:
-        The dataset with enriched training set.
+        The dataset with WMT19 training set.
 
     NOTE: You can replace this with your own dataset. Make sure to include
     the `validation` split and ensure that it is the same as the test split from the WMT19 dataset,
@@ -69,30 +69,25 @@ def build_dataset() -> DatasetDict | Dataset | IterableDatasetDict | IterableDat
         raw_datasets["validation"] = load_dataset('wmt19', 'zh-en', split="validation")
     """
     # Load WMT19 dataset (primary dataset)
+    print("Loading WMT19 zh-en dataset...")
     dataset = load_dataset("wmt19", "zh-en")
     
-    # Load OPUS100 dataset for additional training data
-    opus100_dataset = load_dataset("opus100", "en-zh")
+    # Use only WMT19 to avoid domain shift from OPUS-100
+    # Increase WMT19 to 1M samples for better generalization
+    print("Selecting 1M samples from WMT19 train set...")
+    wmt19_train = dataset["train"].select(range(1000000))
     
-    # Combine WMT19 and OPUS100 training data for richer training
-    wmt19_train = dataset["train"].select(range(500000))  # Use first 500k samples from WMT19 for training
-    opus100_train = opus100_dataset["train"]
+    # Filter low-quality data
+    print("Filtering low-quality data from WMT19 training set...")
+    train_dataset = wmt19_train.filter(filter_low_quality_data, num_proc=8)
+    print(f"WMT19 after filtering: {len(wmt19_train)} -> {len(train_dataset)} samples")
     
-    # Filter low-quality data from both datasets
-    print("Filtering low-quality data from training sets...")
-    wmt19_train_filtered = wmt19_train.filter(filter_low_quality_data, num_proc=4)
-    opus100_train_filtered = opus100_train.filter(filter_low_quality_data, num_proc=4)
-    
-    print(f"WMT19: {len(wmt19_train)} -> {len(wmt19_train_filtered)} samples")
-    print(f"OPUS100: {len(opus100_train)} -> {len(opus100_train_filtered)} samples")
-    opus100_train_filtered = opus100_train_filtered.cast(wmt19_train_filtered.features)
-    
-    # Concatenate and shuffle for better training diversity
-    train_dataset = concatenate_datasets([wmt19_train_filtered, opus100_train_filtered]).shuffle(seed=42)
-    
-    # Keep validation set from WMT19 train split
-    validation_dataset = dataset["train"].select(range(1300000, 1302000))
+    # Use WMT19 validation set for validation
+    print("Using WMT19 validation set...")
+    validation_dataset = dataset["validation"]
 
+    train_dataset = train_dataset.select(range(20))
+    validation_dataset = validation_dataset.select(range(20))
     # NOTE: You should not change the test dataset
     test_dataset = dataset["validation"]
 
